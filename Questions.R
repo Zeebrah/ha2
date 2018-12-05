@@ -11,7 +11,7 @@ data_1 <- read_dta("data_1.dta")
 # Create new variables and then cbind them to the data_1 date.frame
 # Add new variables to the data.frame making sure
 # they are written as 1 and 0 no TRUE and FALSE
-data_1<-
+data_1 <-
   cbind(data_1,
         unem74 = as.numeric(data_1$re74 == 0),
         unem75 = as.numeric(data_1$re75 == 0))
@@ -48,7 +48,7 @@ p_matrix <- c(
 # reg_re75 <- summary(lm(data_1$treat ~ data_1$re75))
 # reg_unem74 <- summary(lm(data_1$treat ~ data_1$unem74))
 # reg_unem75 <- summary(lm(data_1$treat ~ data_1$unem75))
-# 
+#
 # Collecting p-values (from a coefficient tabls) into a matrix
 
 # p_matrix <- c(
@@ -75,11 +75,11 @@ View(p_matrix)
 #2
 # Сonverting re78 to thousands
 data_1_ths <- data_1
-data_1_ths$re78 <- data_1$re78 / 1000
+data_1_ths$re78 <- data_1_ths$re78 / 1000
 # Running regression for #2 and displaying its summary
 summary(lm(data_1_ths$re78 ~ data_1_ths$treat))
 
-# Now look at stimates slope coefficient
+# Now look at estimated slope coefficient
 # If for some person job training program was done,
 # earnings in 1978 increase on average by 1.7943 thousand of dollars
 
@@ -98,7 +98,7 @@ summary(
 # Thus, we do not need to add additional (insignificant) variables
 # and can drop them off the regression
 
-#4 
+#4
 # Loading new data and adding dummy columns unem74, unem75
 data_2 <- as.data.table(read_dta("data_2.dta"))
 data_2 <-
@@ -108,12 +108,86 @@ data_2 <-
 
 # Dropping all obs. where treat is 0
 data_1 <- as.data.table(data_1)
-data_1_dropped <- data_1[treat==1]
+data_1_dropped <- data_1[treat == 1]
 
 # Dropping all obs. where treat is 1
-data_2_dropped <- data_2[treat==0]
+data_2_dropped <- data_2[treat == 0]
 
 # Merging two cleaned up data tables
-data_non_experimental <- rbind(data_1_dropped,data_2_dropped)
+data_non_experimental <- rbind(data_1_dropped, data_2_dropped)
 
 #1 redone for non-experimental
+# We would employ the same methodology here as before
+# Dummie varibles were added already
+
+p_matrix_nonex <- c(
+  p_age = summary(lm(
+    data_non_experimental$treat ~ data_non_experimental$age
+  ))$coefficients[2, 4],
+  p_edu = summary(
+    lm(
+      data_non_experimental$treat ~ data_non_experimental$education
+    )
+  )$coefficients[2, 4],
+  p_black = summary(
+    lm(data_non_experimental$treat ~ data_non_experimental$black)
+  )$coefficients[2, 4],
+  p_hisp = summary(
+    lm(data_non_experimental$treat ~ data_non_experimental$hispanic)
+  )$coefficients[2, 4],
+  p_married = summary(
+    lm(data_non_experimental$treat ~ data_non_experimental$married)
+  )$coefficients[2, 4],
+  p_nodeg = summary(
+    lm(data_non_experimental$treat ~ data_non_experimental$nodegree)
+  )$coefficients[2, 4],
+  p_re74 = summary(lm(
+    data_non_experimental$treat ~ data_non_experimental$re74
+  ))$coefficients[2, 4],
+  p_re75 = summary(lm(
+    data_non_experimental$treat ~ data_non_experimental$re75
+  ))$coefficients[2, 4],
+  p_unem74 = summary(
+    lm(data_non_experimental$treat ~ data_non_experimental$unem74)
+  )$coefficients[2, 4],
+  p_unem75 = summary(
+    lm(data_non_experimental$treat ~ data_non_experimental$unem75)
+  )$coefficients[2, 4]
+)
+
+View(p_matrix_nonex)
+# Everything is extremely significant at any reasonable s.l
+# So, the assumption cleary does not hold
+
+#2 redone for non-experimental
+# Сonverting re78 to thousands
+data_non_experimental_ths <- data_non_experimental
+data_non_experimental_ths$re78 <-
+  data_non_experimental_ths$re78 / 1000
+# Running regression for #2 and displaying its summary
+summary(lm(
+  data_non_experimental_ths$re78 ~ data_non_experimental_ths$treat
+))
+
+# Now look at etimated slope coefficient
+# If for some person job training program1 was done,
+# earnings in 1978 decrease on average by 8.49752 thousand of dollars
+
+#3 redone for non-experimental
+# Running regression for #3 and displaying its summary
+summary(
+  lm(
+    data_non_experimental_ths$re78 ~ data_non_experimental_ths$treat + 
+      data_non_experimental_ths$age + data_non_experimental_ths$education + 
+      data_non_experimental_ths$black + data_non_experimental_ths$hispanic + 
+      data_non_experimental_ths$married + data_non_experimental_ths$nodegree + 
+      data_non_experimental_ths$re74 + data_non_experimental_ths$re75 + 
+      data_non_experimental_ths$unem74 + data_non_experimental_ths$unem75
+  )
+)
+
+# Only treat coefficient is significant (at alpha = 0.05) in this model
+# The st.error of treat in model 1 was 0.6329,
+# While in the new model it is 6.411e-01, which is sligtly larger.
+# Thus, we do not need to add additional (insignificant) variables
+# and can drop them off the regression
