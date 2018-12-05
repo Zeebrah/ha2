@@ -191,3 +191,34 @@ summary(
 # While in the new model it is 6.411e-01, which is sligtly larger.
 # Thus, we do not need to add additional (insignificant) variables
 # and can drop them off the regression
+
+#5
+library(glmnet)
+#creating a matrix of needed variables:
+#1) all our explanatory variables
+x<-as.matrix(data_non_experimental[,-10])
+#2)their interactions
+combinations<-combn(12,2)
+inter<-matrix(nrow=nrow(x),ncol=ncol(combinations))
+for(i in 1:ncol(combinations)){
+  inter[,i]<- x[,combinations[1,i]]*x[combinations[2,i]]
+}
+#merge matrices of covariates and their interactions
+first_variables<-cbind(x,inter)
+#3)obtain their higher orders
+#second orders
+second_variables<-matrix(nrow=nrow(first_variables),ncol=ncol(first_variables))
+for(i in 1:ncol(first_variables)){
+  second_variables[,i]<-first_variables[,i]^2
+}
+#third orders
+third_variables<-matrix(nrow=nrow(first_variables),ncol=ncol(first_variables))
+for(i in 1:ncol(first_variables)){
+  third_variables[,i]<-first_variables[,i]^3
+}
+#combine it in a final matrix of all covariates and their 2,3 orders
+final_variables<-cbind(first_variables,second_variables,third_variables)
+#fit the lasso model using all computed variables
+cvfit <- cv.glmnet(x=final_variables,y=data_non_experimental$re78,alpha=1)
+# obtain coefficients of the model with minimum MSE
+coef(cvfit, s = cvfit$lambda.min)
