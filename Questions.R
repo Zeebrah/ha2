@@ -37,3 +37,10 @@ p_matrix <- c(
   p_unem74 = reg_unem74$coefficients[2, 4],
   p_unem75 = reg_unem75$coefficients[2, 4]
 )
+
+# Examining the assuption
+View(p_matrix)
+# as can be seen from the p-values, for majority of
+# covariates the assumption holds true
+# only nodeg has explanatory power in relation to treat at s.l = 0.05
+# and variables hispanic and unem75 have expl.power at s.l = 0.01
