@@ -118,7 +118,7 @@ data_non_experimental <- rbind(data_1_dropped, data_2_dropped)
 
 #1 redone for non-experimental
 # We would employ the same methodology here as before
-# Dummie varibles were added already
+# Dummie varibles were added already (look couple of lines above)
 
 p_matrix_nonex <- c(
   p_age = summary(lm(
@@ -177,11 +177,11 @@ summary(lm(
 # Running regression for #3 and displaying its summary
 summary(
   lm(
-    data_non_experimental_ths$re78 ~ data_non_experimental_ths$treat + 
-      data_non_experimental_ths$age + data_non_experimental_ths$education + 
-      data_non_experimental_ths$black + data_non_experimental_ths$hispanic + 
-      data_non_experimental_ths$married + data_non_experimental_ths$nodegree + 
-      data_non_experimental_ths$re74 + data_non_experimental_ths$re75 + 
+    data_non_experimental_ths$re78 ~ data_non_experimental_ths$treat +
+      data_non_experimental_ths$age + data_non_experimental_ths$education +
+      data_non_experimental_ths$black + data_non_experimental_ths$hispanic +
+      data_non_experimental_ths$married + data_non_experimental_ths$nodegree +
+      data_non_experimental_ths$re74 + data_non_experimental_ths$re75 +
       data_non_experimental_ths$unem74 + data_non_experimental_ths$unem75
   )
 )
@@ -194,31 +194,99 @@ summary(
 
 #5
 library(glmnet)
-#creating a matrix of needed variables:
-#1) all our explanatory variables
-x<-as.matrix(data_non_experimental[,-10])
-#2)their interactions
-combinations<-combn(12,2)
-inter<-matrix(nrow=nrow(x),ncol=ncol(combinations))
-for(i in 1:ncol(combinations)){
-  inter[,i]<- x[,combinations[1,i]]*x[combinations[2,i]]
+# Here we use re78 in dollars not thousands since we WERE NOT specifiaccly
+# asked to do it in thousands, it doesn't change much anyways
+
+# Creating a matrix of needed variables:
+
+#a) All our explanatory variables as they are
+# i.e everything except column of re78
+
+# Some trickery to arrange columns so that dummies are on the left
+# First exclude every non-dummy columns (including re78)
+# from the data set using appropriate column numbers
+# Then cbind these columns to all excluded factors' columns
+x <-
+  cbind(data_non_experimental[, c(-2,-3,-8,-9,-10)], data_non_experimental[, c(2, 3, 8, 9)])
+
+# Same thing but more detailed:
+# So we cbind  dummies and non-dummie factorsж columns
+# dummies = data_non_experimental[, c(-2,-3,-8,-9,-10)]
+# non_dummy_factors = data_non_experimental[, c(2,3,8,9)]
+
+#b) Their interactions
+# Combinations for use in filling of matrices
+# It includes all first order interaction b/w covariates
+# So we add 1 to exclude treat variable
+combinations <- combn(10, 2) + 1
+# Predefining the dimensions of the 1st order interaction matrix
+inter <- matrix(nrow = nrow(x), ncol = ncol(combinations))
+
+# Loop to fill the matrix
+for (i in 1:ncol(combinations)) {
+  inter[, i] <- x[, combinations[1, i]] * x[, combinations[2, i]]
 }
-#merge matrices of covariates and their interactions
-first_variables<-cbind(x,inter)
-#3)obtain their higher orders
-#second orders
-second_variables<-matrix(nrow=nrow(first_variables),ncol=ncol(first_variables))
-for(i in 1:ncol(first_variables)){
-  second_variables[,i]<-first_variables[,i]^2
+# Merge matrices of covariates and their interactions
+first_order_regressors <- cbind(x, inter)
+
+#c) All second order terms of covariates
+# Second order terms of covariates (except dummies)
+# Since squared dummie would be collinear to just dummy
+covariates_sq <- matrix(nrow = nrow(first_variables), ncol = 4)
+for (i in 1:4) {
+  covariates_sq[, i] <- x[, i + 7] ^ 2
 }
-#third orders
-third_variables<-matrix(nrow=nrow(first_variables),ncol=ncol(first_variables))
-for(i in 1:ncol(first_variables)){
-  third_variables[,i]<-first_variables[,i]^3
+# Giving meaningful names to factor columns
+colnames(covariates_sq) <-
+  c("age^2", "education^2", "re74^2", "re75^2")
+
+#d) All second order ineractions of covariates
+# Here we find all the cross-terms for factors^2 and dummies
+# Following line defines factors which cross terms we need
+# it contains all dummies except treat and all squares of non-dimmies
+inter_sq_input <- cbind(x[2:7], covariates_sq)
+
+#To go through all combinations 
+# we use same approach as in b)
+combinations_for_sq <- combn(10, 2)
+
+# Predefine the matrix for output
+inter_sq <- matrix(nrow = nrow(x), ncol = ncol(combinations))
+
+# Loop to fill the matrix
+for (i in 1:ncol(combinations_for_sq)) {
+  inter_sq[, i] <-
+    inter_sq_input[, combinations_for_sq[1, i]] * inter_sq_input[, combinations_for_sq[2, i]]
 }
-#combine it in a final matrix of all covariates and their 2,3 orders
-final_variables<-cbind(first_variables,second_variables,third_variables)
-#fit the lasso model using all computed variables
-cvfit <- cv.glmnet(x=final_variables,y=data_non_experimental$re78,alpha=1)
-# obtain coefficients of the model with minimum MSE
-coef(cvfit, s = cvfit$lambda.min)
+
+# Merge all second order regressors
+second_order_regressors <- cbind(covariates_sq, inter_sq)
+
+#e) All third order terms of covariates
+covariates_cube <- matrix(nrow = nrow(x), ncol = 4)
+for (i in 1:4) {
+  covariates_cube[, i] <-  x[, i + 7] ^ 3
+}
+
+# Giving meaningful names to factor columns
+colnames(covariates_cube) <-
+  c("age^3", "education^3", "re74^3", "re75^3")
+
+
+# Combine ALL REGRESSORS into a final matrix of all 1st and 2nd order regressors,
+# Adding also third order for non-dummies from e)
+final_regressors <-
+  as.matrix(cbind(first_order_regressors,second_order_regressors,covariates_cube))
+
+# Fit the lasso model using all computed variables
+cvfit <-
+  cv.glmnet(x = final_regressors, y = data_non_experimental$re78, alpha =
+              1)
+# Obtain coefficients of the model with minimum MSE
+result <- coef(cvfit, s = cvfit$lambda.min)
+result
+# All unnamed (numbered) factors are interactions
+#thus the effect of treat on re78 is strictly positive and is interpreted as
+#1.132 dollars of additional earnings in 1978 for people who have received training
+
+
