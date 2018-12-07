@@ -299,4 +299,158 @@ result
 # 1067 dollars of additional earnings in 1978 for people who have received training
 
 #6 matching estimator
+# Estimate model_baseline
+# a) : i,ii,iii
+library(lmtest)
 
+# 1st iteration
+data_non_experimental <- as.data.frame(data_non_experimental)
+cut_1 <- matrix(NA, nrow = 6)
+model_baseline <- list('vector')
+model_aux <- list('vector')
+for (i in 2:7){
+model_baseline[[i]] <-
+  glm(treat ~ re74 + re75 + unem74 + unem75 ,
+      data = data_non_experimental,
+      family = "binomial")
+model_aux[[i]] <-
+  glm(
+    data_non_experimental$treat ~ data_non_experimental$re74 + data_non_experimental$re75 
+    + data_non_experimental$unem74 + data_non_experimental$unem75 + data_non_experimental[,i],
+    family = "binomial")
+cut_1[[i]] <- lrtest(model_baseline[[i]], model_aux[[i]])$Chisq[2]
+}
+
+cut_1
+# 1st position is left blank since it corresponds to treat variable 
+# which os not a covariate
+# So now, we can clearly see that regressor number 4, i.e "black"
+# Has the highest cutoff at 530.1558815, so we updatej model with it and iterate
+
+# 2nd iteration
+cut_2 <- matrix(NA, nrow = 6)
+model_baseline <- list('vector')
+model_aux <- list('vector')
+for (i in c(2,3,5,6,7)){
+  # i doesn't go through 4 since black is now in base model
+  model_baseline[[i]] <-
+    glm(treat ~ re74 + re75 + unem74 + unem75 + black ,
+        data = data_non_experimental,
+        family = "binomial")
+  model_aux[[i]] <-
+    glm(
+      data_non_experimental$treat ~ data_non_experimental$re74 + data_non_experimental$re75 
+      + data_non_experimental$unem74 + data_non_experimental$unem75 + 
+        data_non_experimental$black + data_non_experimental[,i],
+      family = "binomial")
+  cut_2[[i]] <- lrtest(model_baseline[[i]], model_aux[[i]])$Chisq[2]
+}
+cut_2
+
+# now positions 1,4 are blank for the same reason
+# So now, we can clearly see that regressor number 6, i.e "married"
+# Has the highest cutoff at 42.95838, so we update model with it and iterate
+
+# 3rd iteration
+cut_3 <- matrix(NA, nrow = 6)
+model_baseline <- list('vector')
+model_aux <- list('vector')
+for (i in c(2,3,5,7)){
+  # i doesn't go through 4 since black is now in base model
+  model_baseline[[i]] <-
+    glm(treat ~ re74 + re75 + unem74 + unem75 + black + married ,
+        data = data_non_experimental,
+        family = "binomial")
+  model_aux[[i]] <-
+    glm(
+      data_non_experimental$treat ~ data_non_experimental$re74 + data_non_experimental$re75 
+      + data_non_experimental$unem74 + data_non_experimental$unem75 + 
+        data_non_experimental$black + data_non_experimental$married +
+        data_non_experimental[,i],
+      family = "binomial")
+  cut_3[[i]] <- lrtest(model_baseline[[i]], model_aux[[i]])$Chisq[2]
+}
+cut_3
+
+# now positions 1,4,6 are blank for the same reason
+# So now, we can clearly see that regressor number 7, i.e "nodegree"
+# Has the highest cutoff at 42.95838, so we update model with it and iterate
+
+# 4th iteration
+cut_4 <- matrix(NA, nrow = 6)
+model_baseline <- list('vector')
+model_aux <- list('vector')
+for (i in c(2,3,5)){
+  # i doesn't go through 4 since black is now in base model
+  model_baseline[[i]] <-
+    glm(treat ~ re74 + re75 + unem74 + unem75 + black + married + nodegree,
+        data = data_non_experimental,
+        family = "binomial")
+  model_aux[[i]] <-
+    glm(
+      data_non_experimental$treat ~ data_non_experimental$re74 + data_non_experimental$re75 
+      + data_non_experimental$unem74 + data_non_experimental$unem75 + 
+        data_non_experimental$black + data_non_experimental$married +
+        data_non_experimental$nodegree + data_non_experimental[,i],
+      family = "binomial")
+  cut_4[[i]] <- lrtest(model_baseline[[i]], model_aux[[i]])$Chisq[2]
+}
+cut_4
+
+# now positions 1,4,6,7 are blank for the same reason
+# So now, we can clearly see that regressor number 5, i.e "hispanic"
+# Has the highest cutoff at 17.4678228, so we update model with it and iterate
+
+
+# 5th iteration
+cut_5 <- matrix(NA, nrow = 6)
+model_baseline <- list('vector')
+model_aux <- list('vector')
+for (i in c(2,3)){
+  # i doesn't go through 4 since black is now in base model
+  model_baseline[[i]] <-
+    glm(treat ~ re74 + re75 + unem74 + unem75 + black + married + nodegree + hispanic,
+        data = data_non_experimental,
+        family = "binomial")
+  model_aux[[i]] <-
+    glm(
+      data_non_experimental$treat ~ data_non_experimental$re74 + data_non_experimental$re75 
+      + data_non_experimental$unem74 + data_non_experimental$unem75 + 
+        data_non_experimental$black + data_non_experimental$married +
+        data_non_experimental$nodegree + data_non_experimental$hispanic + 
+        data_non_experimental[,i],
+      family = "binomial")
+  cut_5[[i]] <- lrtest(model_baseline[[i]], model_aux[[i]])$Chisq[2]
+}
+cut_5
+
+# now positions 1,4,6,7,5 are blank for the same reason
+# So now, we can clearly see that regressor number 2, i.e "age"
+# Has the highest cutoff at 3.4608758, so we update model with it and iterate
+
+# 6th iteration
+cut_6 <- matrix(NA, nrow = 6)
+model_baseline <- list('vector')
+model_aux <- list('vector')
+for (i in c(3)){
+  # i doesn't go through 4 since black is now in base model
+  model_baseline[[i]] <-
+    glm(treat ~ re74 + re75 + unem74 + unem75 + black + married + nodegree + hispanic + age,
+        data = data_non_experimental,
+        family = "binomial")
+  model_aux[[i]] <-
+    glm(
+      data_non_experimental$treat ~ data_non_experimental$re74 + data_non_experimental$re75 
+      + data_non_experimental$unem74 + data_non_experimental$unem75 + 
+        data_non_experimental$black + data_non_experimental$married +
+        data_non_experimental$nodegree + data_non_experimental$hispanic + 
+        data_non_experimental$age  + data_non_experimental[,i],
+      family = "binomial")
+  cut_6[[i]] <- lrtest(model_baseline[[i]], model_aux[[i]])$Chisq[2]
+}
+cut_6
+
+# FINALLY, case we found a model where all cutoffs are below 1, 
+# i.e containing variales to include in the regression for the propensity score
+
+# a) : i,ii,iii
