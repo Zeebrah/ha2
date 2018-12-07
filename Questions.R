@@ -73,7 +73,8 @@ View(p_matrix)
 # and variables hispanic and unem75 have expl.power at s.l = 0.01
 
 #2
-# Сonverting re78 to thousands
+# Сonverting re78 to thousands and crating extra data frame
+# so as not to disrupt the original form the file
 data_1_ths <- data_1
 data_1_ths$re78 <- data_1_ths$re78 / 1000
 # Running regression for #2 and displaying its summary
@@ -186,6 +187,7 @@ summary(
   )
 )
 
+# Extimated effect of treat is +1066 dollars of income as a result of training completion
 # Only treat coefficient is significant (at alpha = 0.05) in this model
 # The st.error of treat in model 1 was 0.6329,
 # While in the new model it is 6.411e-01, which is sligtly larger.
@@ -197,9 +199,9 @@ library(glmnet)
 # Here we use re78 in dollars not thousands since we WERE NOT specifiaccly
 # asked to do it in thousands, it doesn't change much anyways
 
-# Creating a matrix of needed variables:
+# Creating a matrix of treat and all linear covariates:
 
-#a) All our explanatory variables as they are
+#a) All linear covariates and treat
 # i.e everything except column of re78
 
 # Some trickery to arrange columns so that dummies are on the left
@@ -207,10 +209,10 @@ library(glmnet)
 # from the data set using appropriate column numbers
 # Then cbind these columns to all excluded factors' columns
 x <-
-  cbind(data_non_experimental[, c(-2,-3,-8,-9,-10)], data_non_experimental[, c(2, 3, 8, 9)])
+  as.matrix(cbind(data_non_experimental[, c(-2,-3,-8,-9,-10)], data_non_experimental[, c(2, 3, 8, 9)]))
 
 # Same thing but more detailed:
-# So we cbind  dummies and non-dummie factorsж columns
+# So we cbind  dummies and non-dummie factors' columns
 # dummies = data_non_experimental[, c(-2,-3,-8,-9,-10)]
 # non_dummy_factors = data_non_experimental[, c(2,3,8,9)]
 
@@ -226,13 +228,19 @@ inter <- matrix(nrow = nrow(x), ncol = ncol(combinations))
 for (i in 1:ncol(combinations)) {
   inter[, i] <- x[, combinations[1, i]] * x[, combinations[2, i]]
 }
+
+
+inter<-matrix(nrow=nrow(x),ncol=ncol(combinations))
+for(i in 1:ncol(combinations)){
+  inter[,i]<- x[,combinations[1,i]]*x[,combinations[2,i]]
+}
 # Merge matrices of covariates and their interactions
 first_order_regressors <- cbind(x, inter)
 
 #c) All second order terms of covariates
 # Second order terms of covariates (except dummies)
 # Since squared dummie would be collinear to just dummy
-covariates_sq <- matrix(nrow = nrow(first_variables), ncol = 4)
+covariates_sq <- matrix(nrow = nrow(x), ncol = 4)
 for (i in 1:4) {
   covariates_sq[, i] <- x[, i + 7] ^ 2
 }
@@ -244,7 +252,7 @@ colnames(covariates_sq) <-
 # Here we find all the cross-terms for factors^2 and dummies
 # Following line defines factors which cross terms we need
 # it contains all dummies except treat and all squares of non-dimmies
-inter_sq_input <- cbind(x[2:7], covariates_sq)
+inter_sq_input <- cbind(x[,2:7], covariates_sq)
 
 #To go through all combinations 
 # we use same approach as in b)
@@ -286,7 +294,9 @@ cvfit <-
 result <- coef(cvfit, s = cvfit$lambda.min)
 result
 # All unnamed (numbered) factors are interactions
-#thus the effect of treat on re78 is strictly positive and is interpreted as
-#1.132 dollars of additional earnings in 1978 for people who have received training
+# thus by model chosen through LASSO 
+# the effect of treat on re78 is strictly positive and is interpreted as
+# 1067 dollars of additional earnings in 1978 for people who have received training
 
+#6 matching estimator
 
